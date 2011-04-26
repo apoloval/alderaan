@@ -36,9 +36,11 @@
  #endif
  
  /* Wide-character type. Current implementation considers simple ASCII
-  * character. 
+  * character for C code. 
   */
+ #ifndef __cplusplus
  typedef char           wchar_t;
+ #endif
  
  /* Pointer diff type. Current implementation considers integer pointer
   * value.
