@@ -1,5 +1,5 @@
 /*
- *  File        : kernel/cpp-runtime.cpp
+ *  File        : kernel/cpp-runtime.h
  *  Description : This file provides several operations required by C++
  *                runtime to work
  *  Author      : Alvaro Polo <apoloval@gmail.com>
@@ -27,9 +27,7 @@
  * Theorically, it should never be called due to the fact that a class
  * with any pure-virtual function member cannot be instantiated. 
  */
-extern "C" void __cxa_pure_virtual(void) {}
 
-void*
-operator new(unsigned int s, void *pool)
-{ return pool; }
+/* Operator new for allocating in concrete placement. */
+void* operator new(unsigned int s, void *pool);
 
