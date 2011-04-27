@@ -1,7 +1,7 @@
 /*
  *  File        : kernel/streams.h
  *  Description : This file provides abstract classes representing data
- *                streams.
+ *                streams and utility classes for support input and output.
  *  Author      : Alvaro Polo <apoloval@gmail.com>
  *
  *  Revisions   :
@@ -50,7 +50,27 @@ class OutputStream
 public:
 
    /* Write nbytes from data to the stream. */
-   virtual void write(void *data, size_t nbytes) = 0;
+   virtual void write(const void *data, size_t nbytes) = 0;
+
+};
+
+/* String printer class. Objects of this class wraps an OutputStream
+ * object in order to extend it with string printing operations. 
+ */
+class StringPrinter
+{
+public:
+
+   /* Constructor. */
+   inline StringPrinter(OutputStream *ostream) : os(ostream) {}
+
+   /* Prints a formatted message into output stream. */
+   void print(const char *format, ...);   
+
+private:
+
+   /* The output stream to print strings to. */
+   OutputStream *os;
 
 };
 
@@ -64,9 +84,6 @@ public:
    /* Obtain boot terminal instance for current architecture. */
    static BootTerminal &instance();
 
-   /* Prints a formatted message into terminal. */
-   virtual void print(const char *format, ...) = 0;
-   
    /* Clean the terminal and reset the cursor to top-left position. */
    virtual void clear() = 0;
    

@@ -26,7 +26,7 @@
 #include <config.h>
 #include <i386/multiboot.h>
 
-#define MBOOT_H_FLAGS (MBOOT_H_INCMEM | MBOOT_H_INCMEM)
+#define MBOOT_H_FLAGS (MBOOT_H_INCMEM | MBOOT_H_INCMEM | MBOOT_H_IMGPAR)
 
 
             .text
@@ -34,9 +34,15 @@
 _start:      jmp         skipHeader
 
             .align 4
+mbootHeader:
             .long       MULTIBOOT_HEADER_MAGIC
             .long       MBOOT_H_FLAGS
             .long       -(MULTIBOOT_HEADER_MAGIC + MBOOT_H_FLAGS)
+            .long       mbootHeader
+            .long       _start
+            .long       _edata
+            .long       _end
+            .long       skipHeader
 
 skipHeader: 
             /* Configure the stack */
@@ -61,3 +67,5 @@ loop:
             
             /* Stack declaration. */
             .comm       kstack, KERNEL_STACK_SIZE
+
+

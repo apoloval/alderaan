@@ -28,6 +28,7 @@
 
 #include <streams.h>
 #include <stdint.h>
+#include <cpp-runtime.h>
 
 namespace kalderaan { namespace intel386 {
 
@@ -36,53 +37,6 @@ namespace kalderaan { namespace intel386 {
 #define SCREEN_ATTRIBUTE		0x3f
 #define SCREEN_ADDR           0xb8000
 
-/* Convert the integer D to a string and save the string in BUF. If
- * BASE is equal to 'd', interpret that D is decimal, and if BASE is
- * equal to 'x', interpret that D is hexadecimal.
- */
-static void
-itoa(char *buf, int base, int d)
-{
-   char *p = buf;
-   char *p1, *p2;
-   unsigned long ud = d;
-   int divisor = 10;
-  
-   /* If %d is specified and D is minus, put `-' in the head.  */
-   if (base == 'd' && d < 0)
-   {
-      *p++ = '-';
-      buf++;
-      ud = -d;
-   }
-   else if (base == 'x')
-      divisor = 16;
-
-   /* Divide UD by DIVISOR until UD == 0.  */
-   do
-   {
-      int remainder = ud % divisor;
-      
-      *p++ = (remainder < 10) ? remainder + '0' : remainder + 'a' - 10;
-   }
-   while (ud /= divisor);
-
-   /* Terminate BUF.  */
-   *p = 0;
-  
-   /* Reverse BUF.  */
-   p1 = buf;
-   p2 = p - 1;
-   while (p1 < p2)
-   {
-      char tmp = *p1;
-      *p1 = *p2;
-      *p2 = tmp;
-      p1++;
-      p2--;
-   }
-}
-
 class BootTerminal : public ::kalderaan::BootTerminal
 {
 public:
@@ -90,10 +44,42 @@ public:
    BootTerminal() : vmem((unsigned char*) 0xb8000), xpos(0), ypos(0) {}
 
    /* Write nbytes from data to the stream. */
-   virtual void write(void *data, size_t nbytes)
+   virtual void write(const void *data, size_t nbytes)
    {
-      /* As output stream, this writes the bytes in current cursor position. */
-      
+      const char *p = (const char*) data;
+      for (size_t i = 0; i < nbytes; i++)
+      {
+         char c = *p++;
+         if (c == '\n' || c == '\r')
+         {
+            newline:
+            xpos = 0;
+            ypos++;
+            if (ypos >= SCREEN_LINES)
+            {
+               for (int i = SCREEN_COLUMNS * 2; 
+                    i < SCREEN_COLUMNS * SCREEN_LINES * 2; i += 2)
+               {
+                  *(vmem + i - SCREEN_COLUMNS * 2) = *(vmem + i);
+                  *(vmem + i - SCREEN_COLUMNS * 2 + 1) = *(vmem + i + 1);
+               }
+               for (int i = SCREEN_COLUMNS * (SCREEN_LINES - 1) * 2; 
+                    i < SCREEN_COLUMNS * SCREEN_LINES * 2; i += 2)
+               {
+                  *(vmem + i) = 0;
+                  *(vmem + i + 1) = SCREEN_ATTRIBUTE;
+               }
+               ypos--;      
+            }
+            continue;
+         }
+         *(vmem + (xpos + ypos * SCREEN_COLUMNS) * 2) = c & 0xff;
+         *(vmem + (xpos + ypos * SCREEN_COLUMNS) * 2 + 1) = SCREEN_ATTRIBUTE;
+
+         xpos++;
+         if (xpos >= SCREEN_COLUMNS)
+            goto newline;
+      }   
    }
 
 
@@ -109,80 +95,6 @@ public:
       ypos = 0;
    }
 
-   virtual void print(char c)
-   {
-      if (c == '\n' || c == '\r')
-      {
-         newline:
-         xpos = 0;
-         ypos++;
-         if (ypos >= SCREEN_LINES)
-         {
-            for (int i = SCREEN_COLUMNS * 2; 
-                 i < SCREEN_COLUMNS * SCREEN_LINES * 2; i += 2)
-            {
-               *(vmem + i - SCREEN_COLUMNS * 2) = *(vmem + i);
-               *(vmem + i - SCREEN_COLUMNS * 2 + 1) = *(vmem + i + 1);
-            }
-            for (int i = SCREEN_COLUMNS * (SCREEN_LINES - 1) * 2; 
-                 i < SCREEN_COLUMNS * SCREEN_LINES * 2; i += 2)
-            {
-               *(vmem + i) = 0;
-               *(vmem + i + 1) = SCREEN_ATTRIBUTE;
-            }
-            ypos--;      
-         }
-         return;
-      }
-
-      *(vmem + (xpos + ypos * SCREEN_COLUMNS) * 2) = c & 0xFF;
-      *(vmem + (xpos + ypos * SCREEN_COLUMNS) * 2 + 1) = SCREEN_ATTRIBUTE;
-
-      xpos++;
-      if (xpos >= SCREEN_COLUMNS)
-      goto newline;
-   }
-
-   virtual void print(const char *format, ...)
-   {
-      char **arg = (char **) &format;
-      int c;
-      char buf[20];
-
-      arg++;
-   
-      while ((c = *format++) != 0)
-      {
-         if (c != '%')
-            print(c);
-         else
-         {
-            char *p;
-      
-            c = *format++;
-            switch (c)
-            {
-               case 'd':
-               case 'u':
-               case 'x':
-                  itoa (buf, c, *((int *) arg++));
-                  p = buf;
-                  goto string;
-                  break;
-               case 's':
-                  p = *arg++;
-                  if (! p) p = (char*) "(null)";
-                  string: while (*p)
-                     print(*p++);
-                  break;
-               default:
-                  print(*((int *) arg++));
-                  break;
-            }
-         }
-      }
-   }
-
 private:
 
   uint8_t *vmem;
@@ -191,7 +103,9 @@ private:
 
 };
 
-BootTerminal bootTermInstance;
+static uint8_t bootTermMem[sizeof(BootTerminal)];
+static BootTerminal *bootTermInstance = 0;
+
 
 }}; // namespace kalderaan::i386
 
@@ -200,7 +114,12 @@ namespace kalderaan {
 BootTerminal&
 BootTerminal::instance()
 {
-   return kalderaan::intel386::bootTermInstance;
+   using namespace ::kalderaan::intel386;
+   if (!bootTermInstance)
+   {
+      bootTermInstance = new ((void*) bootTermMem) intel386::BootTerminal();
+   }
+   return *bootTermInstance;
 }
 
 }; // namespace kaldeaan

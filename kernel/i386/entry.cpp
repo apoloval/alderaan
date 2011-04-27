@@ -35,13 +35,22 @@
  */
 extern "C" void kernelEntryPoint(uint32_t magic, struct BootInfo *bi);
 
+static char welcomeMsg[] = "Booting Alderaan Operating System...\n";
+static char welcomeMsg2[] = "Kernel loaded successfully!\n";
+
 void
 kernelEntryPoint(uint32_t magic, struct BootInfo *bi)
 {
    using namespace kalderaan;
    
    BootTerminal &term = BootTerminal::instance();
-   term.print("Booting Alderaan operating system... \n");
+   term.clear();
+   term.write(welcomeMsg, sizeof(welcomeMsg) - 1);
+   term.write(welcomeMsg2, sizeof(welcomeMsg2) - 1);
+   // StringPrinter tp(&term);
+   // tp.print("Booting Alderaan operating system... \n");
+   
+   for (;;) {}
 }
 
 

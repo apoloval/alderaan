@@ -10,7 +10,8 @@ OBJECTS = \
    i386/boot.o \
    i386/bootterm.o \
    i386/entry.o \
-   cpp-runtime.o
+   cpp-runtime.o \
+   streams.o
 
 all: $(IMG)
 
