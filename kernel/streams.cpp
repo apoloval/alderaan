@@ -26,6 +26,7 @@
 #include <streams.h>
 
 #include <stdint.h>
+#include <mem-utils.h>
 
 namespace kalderaan {
 
@@ -81,18 +82,6 @@ itoa(char *buf, int base, int d)
    return nwriten;
 }
 
-/* Return the length of a null-terminated string. */
-static int
-strlen(const char *str)
-{
-   int l = 0;
-   char c;
-   
-   while ((c = *str++) != 0)
-      l++;
-   return l;
-}
-
 void
 StringPrinter::print(const char *format, ...)
 {
@@ -108,7 +97,8 @@ StringPrinter::print(const char *format, ...)
       if (c == '%')
       {
          // Directive found, let's print the previously read data
-         os->write(base, nbytes);
+         if (nbytes)
+            os->write(base, nbytes);
          
          // Let's print the directive
          c = *format++;
@@ -137,6 +127,9 @@ StringPrinter::print(const char *format, ...)
       else
          nbytes++;
    }
+   // Print the previous analized data
+   if (nbytes)
+      os->write(base, nbytes);
 }
 
 }; // namespace kalderaan
