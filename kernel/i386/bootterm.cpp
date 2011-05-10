@@ -28,7 +28,7 @@
 
 #include <streams.h>
 #include <stdint.h>
-#include <cpp-runtime.h>
+#include <runtime.h>
 
 namespace kalderaan { namespace intel386 {
 
@@ -103,8 +103,7 @@ private:
 
 };
 
-static uint8_t bootTermMem[sizeof(BootTerminal)];
-static BootTerminal *bootTermInstance = 0;
+static BootTerminal bootTermInstance;
 
 
 }}; // namespace kalderaan::i386
@@ -115,11 +114,7 @@ BootTerminal&
 BootTerminal::instance()
 {
    using namespace ::kalderaan::intel386;
-   if (!bootTermInstance)
-   {
-      bootTermInstance = new ((void*) bootTermMem) intel386::BootTerminal();
-   }
-   return *bootTermInstance;
+   return bootTermInstance;
 }
 
 }; // namespace kaldeaan

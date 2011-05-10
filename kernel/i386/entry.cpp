@@ -29,27 +29,38 @@
 #include <stdint.h>
 #include <streams.h>
 #include <i386/multiboot.h>
+#include <config.h>
 
 /* Kernel entry point is declared as a C-function to make it easier to
  * be invoked from assembler code. 
  */
 extern "C" void kernelEntryPoint(uint32_t magic, struct BootInfo *bi);
 
-static char welcomeMsg[] = "Booting Alderaan Operating System...\n";
-static char welcomeMsg2[] = "Kernel loaded successfully!\n";
+/* External symbols provided by linker. They indicate the addresses where
+ * constructos and destructors start and ends, respectively. 
+ */
+extern uint32_t start_ctors, end_ctors, start_dtors, end_dtors;
 
 void
 kernelEntryPoint(uint32_t magic, struct BootInfo *bi)
 {
    using namespace kalderaan;
    
+   // Invoke constructors for each static variable of the kernel image
+   for(uint32_t *cons(&start_ctors); cons < &end_ctors; ++cons)
+     ((void(*)(void)) (*cons))();
+   
+   // Prepare the boot terminal
    BootTerminal &term = BootTerminal::instance();
    term.clear();
-   term.write(welcomeMsg, sizeof(welcomeMsg) - 1);
-   term.write(welcomeMsg2, sizeof(welcomeMsg2) - 1);
-   // StringPrinter tp(&term);
-   // tp.print("Booting Alderaan operating system... \n");
-   
+
+   // Print the welcome message
+   StringPrinter tp(&term);
+   tp.print("Booting Alderaan operating system v%d.%d... \n",
+      KERNEL_MAJOR_VERSION,
+      KERNEL_MINOR_VERSION);
+      
+   // TODO: continue kernel loading
    for (;;) {}
 }
 
