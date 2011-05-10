@@ -39,9 +39,9 @@ mbootHeader:
             .long       MBOOT_H_FLAGS
             .long       -(MULTIBOOT_HEADER_MAGIC + MBOOT_H_FLAGS)
             .long       mbootHeader
-            .long       _start
-            .long       _edata
-            .long       _end
+            .long       start_text
+            .long       end_data
+            .long       end_bss
             .long       skipHeader
 
 skipHeader: 
