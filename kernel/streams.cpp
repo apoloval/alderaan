@@ -26,7 +26,7 @@
 #include <streams.h>
 
 #include <stdint.h>
-#include <mem-utils.h>
+#include <mem.h>
 
 namespace kalderaan {
 

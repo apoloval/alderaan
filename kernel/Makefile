@@ -13,7 +13,7 @@ OBJECTS = \
    i386/io.o \
    runtime.o \
    streams.o \
-   mem-utils.o
+   mem.o
 
 all: $(IMG)
 
