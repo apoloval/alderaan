@@ -41,10 +41,17 @@ extern "C" void kernelEntryPoint(uint32_t magic, struct BootInfo *bi);
  */
 extern uint32_t start_ctors, end_ctors, start_dtors, end_dtors;
 
+#define FLAG_ENABLED(flags, bit) ((flags) & (1 << (bit)))
+
 void
 kernelEntryPoint(uint32_t magic, struct BootInfo *bi)
 {
    using namespace kalderaan;
+   
+   /* Prepare the kernel page tables. This action cannot be executed from
+    * a C++ class since all they are mapped to 0xc0000000. Memory paging
+    * must be enabled before accesing any C++ code. */
+   /* TODO: write the code! */
    
    // Invoke constructors for each static variable of the kernel image
    for(uint32_t *cons(&start_ctors); cons < &end_ctors; ++cons)
@@ -59,6 +66,26 @@ kernelEntryPoint(uint32_t magic, struct BootInfo *bi)
    tp.print("Booting Alderaan operating system v%d.%d... \n",
       KERNEL_MAJOR_VERSION,
       KERNEL_MINOR_VERSION);
+   
+   if (FLAG_ENABLED(bi->flags, 6))
+   {
+      tp.print("Loading memory map... \n");
+      MemoryMapEntry *mmap;
+           
+      for (mmap = (MemoryMapEntry*) bi->memMapAddr;
+           (unsigned long) mmap < bi->memMapAddr + bi->memMapLen;
+           mmap = (MemoryMapEntry*) ((unsigned long) mmap
+                                         + mmap->size + sizeof (mmap->size)))
+      {
+         if (mmap->type == 1)
+            tp.print("   Memory hole at 0x%x (%d bytes)\n", 
+                     mmap->addrLow, mmap->lenLow);
+      }
+   }
+   else
+   {
+      tp.print("Warning: no memory map available\n");
+   }
       
    // TODO: continue kernel loading
    for (;;) {}

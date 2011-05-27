@@ -31,7 +31,7 @@
 
             .text
             .globl      _start
-_start:      jmp         skipHeader
+_start:      jmp         _kernel
 
             .align 4
 mbootHeader:
@@ -39,12 +39,12 @@ mbootHeader:
             .long       MBOOT_H_FLAGS
             .long       -(MULTIBOOT_HEADER_MAGIC + MBOOT_H_FLAGS)
             .long       mbootHeader
-            .long       start_text
-            .long       end_data
-            .long       end_bss
-            .long       skipHeader
+            .long       ktext_start
+            .long       kdata_end
+            .long       kbss_end
+            .long       _kernel
 
-skipHeader: 
+_kernel: 
             /* Configure the stack */
             movl        $(kstack + KERNEL_STACK_SIZE), %esp
             
@@ -58,11 +58,11 @@ skipHeader:
 
             call        kernelEntryPoint
             
-loop:
+1:
             /* kernelEntryPoint() must never return. Halt the machine in
              * such a case */
             hlt
-            jmp         loop
+            jmp         1b
             
             
             /* Stack declaration. */

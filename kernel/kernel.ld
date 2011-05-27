@@ -1,19 +1,20 @@
 SECTIONS
 {
 
-   . = 0x100000;
-   
-   .text :
+   .setup 0x100000 :
    {
-      start_text = .;
+      i386/boot.o
+      i386/entry.o(.text*)
+   }
+
+   .text 0xc0000000 : AT ( ADDR(.setup) + SIZEOF ( .setup ) )
+   {
       *(.text*)
       *(.gnu.linkonce.t*)
-      end_text = .;
    }
    
-   .rodata :
+   .rodata ALIGN (4096) : AT ( ADDR(.text) + SIZEOF ( .text ) )
    {
-      start_data = .;
       start_ctors = .;
 		*(.ctor*)
 		end_ctors = .;
@@ -26,22 +27,23 @@ SECTIONS
 		*(.gnu.linkonce.r*)
    }
    
-   .data :
+   .data ALIGN (4096) : AT ( ADDR(.rodata) + SIZEOF ( .rodata ) )
 	{
 		*(.data*)
 		*(.gnu.linkonce.d*)
-		end_data = .;
 	}
 
-	.bss :
+	.bss ALIGN (4096) : AT ( ADDR(.data) + SIZEOF ( .data ) )
 	{
-	   start_bss = .;
 		*(.COMMON*)
 		*(.bss*)
 		*(.gnu.linkonce.b*)
-		end_bss = .;
 	}
-
-
+	
+	ktext_start = ADDR(.setup);
+	kdata_end = ktext_start + SIZEOF(.setup) + SIZEOF(.text) + 
+	            SIZEOF(.rodata) + SIZEOF(.data);
+	kbss_end = kdata_end + SIZEOF(.bss);
+	
 }
 
