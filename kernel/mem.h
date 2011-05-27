@@ -27,12 +27,67 @@
 
 #include <stddef.h>
 
+#define MAX_MEM_HOLES 512
+
 namespace kalderaan
 {
 
 /* Return the length of a null-terminated string. */
 /* TODO: This function is a good candidate to be moved to string.h. */
 size_t strlen(const char *str);
+
+/* Memory manager class. This class manages the system memory, allocating
+ * blocks for kernel and user-space processes. 
+ */
+class MemoryManager
+{
+public:
+
+   /* Hole owner. */
+   enum HoleOwner
+   {
+      KERNEL_STATIC,
+      KERNEL_HEAP,
+      KERNEL_MODULE,
+      USERSPACE_PROCESS,
+   };
+
+   /* Memory hole, i.e. a region of memory available. */
+   struct Hole
+   {
+      uint32_t base;
+      size_t length;
+      HoleOwner owner;
+      Hole *next;
+   };
+
+   //! Obtain singleton instance
+   MemoryManager &instance();
+   
+   /* Register a new hole. */
+   void registerHole(uint32_t base, size_t len);
+
+private:
+
+   /* Singleton instance. */
+   static MemoryManager mSingleton;
+   
+   /* Private constructor. */
+   MemoryManager();
+
+   /* Memory holes. */
+   Hole mHoles[MAX_MEM_HOLES];
+   
+   /* Pointer to the free mem holes. */
+   Hole *mFree;
+   
+   /* Pointer to the used mem holes. */
+   Hole *mUsed;
+   
+   /* Pointer to the unasigned mem holes. */
+   Hole *mUnassigned;
+
+};
  
 }; // namespace kalderaan
 

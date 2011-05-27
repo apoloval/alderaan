@@ -25,7 +25,7 @@
 #include <mem.h> 
 
 namespace kalderaan {
- 
+
 /* Return the length of a null-terminated string. */
 size_t
 strlen(const char *str)
@@ -36,6 +36,29 @@ strlen(const char *str)
    while ((c = *str++) != 0)
       l++;
    return l;
+}
+
+void
+MemoryManager::registerHole(uint32_t base, size_t len)
+{
+   Hole *tmp = mUnassigned->next;
+   
+   mUnassigned->base = base;
+   mUnassigned->length = len;
+   mUnassigned->next = mFree;
+   
+   mFree = mUnassigned;
+   mUnassigned = tmp;
+}
+
+MemoryManager MemoryManager::mSingleton;
+
+MemoryManager::MemoryManager()
+ : mFree(0), mUsed(0), mUnassigned(mHoles)
+{
+   for (int i = 0; i < MAX_MEM_HOLES - 1; i++)
+      mHoles[i].next = &mHoles[i + 1];
+   mHoles[MAX_MEM_HOLES - 1].next = 0;
 }
  
 }; // namespace kalderaan

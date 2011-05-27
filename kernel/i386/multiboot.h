@@ -161,8 +161,8 @@ struct BootInfo
    uint32_t          modsCount;     // Number of loaded modules
    uint32_t          modsAddr;      // Address of first loaded module
    union ImageInfo   imgInfo;       // Image information
-   uint32_t          mMapLen;       // Length of memory map
-   uint32_t          mMapAddr;      // Base address of memory map
+   uint32_t          memMapLen;     // Length of memory map
+   uint32_t          memMapAddr;    // Base address of memory map
    uint32_t          drivesLen;     // Length of drives vector in bytes
    uint32_t          drivesAddr;    // Base address of drives vector
    uint32_t          configTable;   // Address of ROM config table
@@ -189,8 +189,10 @@ struct ModuleInfo
 struct MemoryMapEntry
 {
    uint32_t          size;          // Size of the memory map entry
-   uint32_t          addr;          // Base address of described memory region
-   uint32_t          len;           // Length of described memory region
+   uint32_t          addrLow;       // Base address of described memory region
+   uint32_t          addrHigh;      // Base address of described memory region
+   uint32_t          lenLow;        // Length of described memory region
+   uint32_t          lenHigh;       // Length of described memory region
    uint32_t          type;          // Type of described memory region 
                                     // (1 for RAM; otherwise is reserved)
 };
