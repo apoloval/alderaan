@@ -1,19 +1,31 @@
 SECTIONS
 {
 
-   .setup 0x100000 :
+   . = 0x100000;
+
+   .setup :
    {
       i386/boot.o
       i386/entry.o(.text*)
+      . = ALIGN(0x1000);
    }
 
-   .text 0xc0000000 : AT ( ADDR(.setup) + SIZEOF ( .setup ) )
+	vma_ksetup     = ADDR(.setup);
+	lma_ksetup     = ADDR(.setup);
+
+   . = 0xc0000000 + . - 0x100000;
+
+   .text : AT ( lma_ksetup + SIZEOF ( .setup ) )
    {
       *(.text*)
       *(.gnu.linkonce.t*)
+      . = ALIGN(0x1000);
    }
    
-   .rodata ALIGN (4096) : AT ( ADDR(.text) + SIZEOF ( .text ) )
+	vma_ktext      = ADDR(.text);
+	lma_ktext      = lma_ksetup + SIZEOF(.setup);
+
+   .rodata : AT ( lma_ktext + SIZEOF ( .text ) )
    {
       start_ctors = .;
 		*(.ctor*)
@@ -25,25 +37,36 @@ SECTIONS
 
 		*(.rodata*)
 		*(.gnu.linkonce.r*)
+      . = ALIGN(0x1000);
    }
    
-   .data ALIGN (4096) : AT ( ADDR(.rodata) + SIZEOF ( .rodata ) )
+	vma_krodata    = ADDR(.rodata);
+	lma_krodata    = lma_ktext + SIZEOF(.text);
+
+   .data : AT ( lma_krodata + SIZEOF ( .rodata ) )
 	{
 		*(.data*)
 		*(.gnu.linkonce.d*)
+      . = ALIGN(0x1000);
 	}
 
-	.bss ALIGN (4096) : AT ( ADDR(.data) + SIZEOF ( .data ) )
+	vma_kdata      = ADDR(.data);
+	lma_kdata      = lma_krodata + SIZEOF(.rodata);
+
+	.bss : AT ( lma_kdata + SIZEOF ( .data ) )
 	{
 		*(.COMMON*)
 		*(.bss*)
 		*(.gnu.linkonce.b*)
+		. += 0x4000;
+      . = ALIGN(0x1000);      
 	}
 	
-	ktext_start = ADDR(.setup);
-	kdata_end = ktext_start + SIZEOF(.setup) + SIZEOF(.text) + 
-	            SIZEOF(.rodata) + SIZEOF(.data);
-	kbss_end = kdata_end + SIZEOF(.bss);
+	vma_kbss       = ADDR(.bss);	
+	lma_kbss       = lma_kdata + SIZEOF(.data);
 	
+	lma_kstart     = lma_ksetup;
+	lma_kend       = lma_kbss + SIZEOF(.bss);
+		
 }
 

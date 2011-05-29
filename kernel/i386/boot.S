@@ -39,14 +39,17 @@ mbootHeader:
             .long       MBOOT_H_FLAGS
             .long       -(MULTIBOOT_HEADER_MAGIC + MBOOT_H_FLAGS)
             .long       mbootHeader
-            .long       ktext_start
-            .long       kdata_end
-            .long       kbss_end
+            .long       lma_kstart
+            .long       lma_kbss
+            .long       lma_kend
             .long       _kernel
 
 _kernel: 
-            /* Configure the stack */
-            movl        $(kstack + KERNEL_STACK_SIZE), %esp
+            /* Configure the stack. This stack is not the actual kernel
+             * stack but a temporal one. 
+             */
+            // movl        $(kstack + KERNEL_STACK_SIZE), %esp
+            movl        $0xa0000, %esp
             
             /* Reset EFLAGS by pushing and poping an arbitrary value. */
             pushl       $0
@@ -65,7 +68,9 @@ _kernel:
             jmp         1b
             
             
-            /* Stack declaration. */
-            .comm       kstack, KERNEL_STACK_SIZE
+            /* This padding is necessary in order to .setup segment to
+             * be placed at 0xa0 file offset and avoid alignment issues. 
+             */
+            .comm       __setup_padding, 64
 
 

@@ -40,6 +40,7 @@ extern "C" void kernelEntryPoint(uint32_t magic, struct BootInfo *bi);
  * constructos and destructors start and ends, respectively. 
  */
 extern uint32_t start_ctors, end_ctors, start_dtors, end_dtors;
+extern uint32_t lma_kstart; //, kstack;
 
 #define FLAG_ENABLED(flags, bit) ((flags) & (1 << (bit)))
 
@@ -52,7 +53,33 @@ kernelEntryPoint(uint32_t magic, struct BootInfo *bi)
     * a C++ class since all they are mapped to 0xc0000000. Memory paging
     * must be enabled before accesing any C++ code. */
    /* TODO: write the code! */
+   uint32_t *pdir = (uint32_t*) 0x10000;
+   uint32_t *ptab1 = (uint32_t*) 0x11000;
+   uint32_t *ptab2 = (uint32_t*) 0x12000;
    
+   // Clear directory and tables filling with zeroes
+   for (int i = 0; i < 1024; i++)
+      pdir[i] = ptab1[i] = ptab2[i] = 0x2;
+   
+   // Make 1:1 translation for memory under 2MB
+   for (int i = 0; i < 512; i++)
+      ptab1[i] = (0x1000 * i) | 0x3;
+   
+   // Make translation to kernel memory
+   for (int i = 0; i < 1024; i++)
+      ptab2[i] = (((uint32_t) &lma_kstart) + (i * 0x1000)) | 0x3;
+      
+   // Prepare the page directory
+   pdir[0]     = ((uint32_t) ptab1) | 0x3;
+   pdir[0x300] = ((uint32_t) ptab2) | 0x3;
+   
+   // Enable paging
+   asm volatile("mov %0, %%cr3;" :: "r"(pdir));
+   uint32_t cr0;
+   asm volatile("mov %%cr0, %0;" : "=r"(cr0));
+   cr0 |= 0x80000001;
+   asm volatile("mov %0, %%cr0;" :: "r"(cr0));
+
    // Invoke constructors for each static variable of the kernel image
    for(uint32_t *cons(&start_ctors); cons < &end_ctors; ++cons)
      ((void(*)(void)) (*cons))();
